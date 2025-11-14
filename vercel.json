@@ -1,0 +1,18 @@
+{
+  "crons": [
+    {
+      "path": "/api/scrape",
+      "schedule": "0 1 * * *" 
+    },
+    
+    {
+      "path": "/api/cron_daily",
+      "schedule": "0 8 * * *" 
+    },
+    
+    {
+      "path": "/api/cron_weekly",
+      "schedule": "0 9 * * 1"
+    }
+  ]
+}
