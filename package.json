@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npx playwright install",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npx playwright install chromium"
+    "postinstall": "npx playwright install chromium --with-deps"
   },
   "dependencies": {
     "@sparticuz/chromium": "^141.0.0",
