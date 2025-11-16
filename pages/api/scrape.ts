@@ -1,8 +1,7 @@
-// my-scrape-project/pages/api/scrape.ts
-
-// DÜZƏLİŞ: pages/api-dən src-nin daxilinə çıxış (../../)
 import { runScrapeAndGetData } from '../../src/scrape'; 
 import type { NextApiRequest, NextApiResponse } from 'next';
+
+let isRunning = false; // Global kilid
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,8 +11,15 @@ export default async function handler(
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    // Əgər artıq işləyirsə, reject et
+    if (isRunning) {
+        return res.status(429).json({ 
+            message: '⏳ Scraping artıq işləyir. Zəhmət olmasa gözləyin.' 
+        });
+    }
+
     try {
-        // Bütün proses (scrape və upsert) bu funksiya daxilində tamamlanır
+        isRunning = true; // Kilidi qoy
         await runScrapeAndGetData(); 
 
         return res.status(200).json({ 
@@ -21,8 +27,12 @@ export default async function handler(
         });
 
     } catch (error: any) {
-        // Xəta halında konsola tam xətanı yazdırır
         console.error("API-də kritik xəta baş verdi:", error);
-        return res.status(500).json({ message: 'Daxili server xətası. Konsolda daha ətraflı baxın.', error: error.message });
+        return res.status(500).json({ 
+            message: 'Daxili server xətası.', 
+            error: error.message 
+        });
+    } finally {
+        isRunning = false; // Kilidi aç
     }
 }
