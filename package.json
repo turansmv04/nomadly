@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "cron":"ts-node src/cron-handler.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@sparticuz/chromium": "^141.0.0",
