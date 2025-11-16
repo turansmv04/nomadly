@@ -12,7 +12,6 @@ export interface ScrapedJobData {
     siteUrl: string; 
 }
 
-// SİZİN URL DƏYƏRLƏRİNİZ
 const BASE_URL: string = 'https://www.workingnomads.com'; 
 const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
 const MAX_SCROLL_COUNT = 500; 
@@ -26,8 +25,6 @@ const SELECTORS = {
     DETAIL_SALARY_B: 'div.job-detail-sidebar:has(i.fa-money)',
     LIST_PARENT: 'div.jobs-list',
 };
-
-// --- KÖMƏKÇİ FUNKSİYALAR (Sizinki dəyişməz qalır) ---
 
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
@@ -57,16 +54,22 @@ async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise
     return salary;
 }
 
-async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> {
+async function extractInitialJobData(wrapper: Locator, index: number): Promise<ScrapedJobData> {
+    
+    console.log(`🔍 Element #${index + 1} emal edilir...`);
     
     const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
     let title = '', relativeUrl = null, url = 'N/A', companyName = 'N/A', salary = 'N/A';
     
     try {
-        title = (await titleLocator.innerText({ timeout: 1000 })).trim();
+        title = (await titleLocator.innerText({ timeout: 2000 })).trim();
         relativeUrl = await titleLocator.getAttribute('href');
         url = relativeUrl ? `${BASE_URL}${relativeUrl}` : 'N/A';
+        
+        console.log(`✅ #${index + 1} Title: "${title.substring(0, 30)}..."`);
+        
     } catch (e) {
+        console.error(`❌ #${index + 1} Title tapılmadı! Xəta: ${e instanceof Error ? e.message : String(e)}`);
         return { title: '', companyName: 'N/A', url: 'N/A', salary: 'N/A', siteUrl: BASE_URL }; 
     }
 
@@ -108,29 +111,33 @@ async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> 
     return { title, companyName, url, salary, siteUrl: BASE_URL };
 }
 
-
-// --- ƏSAS FUNKSİYA ---
 export async function runScrapeAndGetData() {
     
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
-const browser: Browser = await chromium.launch({ 
-    headless: true,
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-    ]
-});    
+    const browser: Browser = await chromium.launch({ 
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+        ]
+    });    
+    
     const page: Page = await browser.newPage();
+    
+    await page.setExtraHTTPHeaders({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    });
     
     try {
         await page.goto(TARGET_URL, { timeout: 60000 });
         await page.waitForSelector(SELECTORS.LIST_PARENT, { timeout: 40000 }); 
 
-        // --- SCROLL DÖVRÜ ---
         let currentJobCount = 0;
         let previousCount = 0;
         let sameCountIterations = 0; 
@@ -155,15 +162,22 @@ const browser: Browser = await chromium.launch({
             }
         }
         
-        // --- MƏLUMATIN ÇIXARILMASI ---
         console.log(`\n${currentJobCount} elementdən əsas məlumat çıxarılır...`);
         const jobWrappers = await page.locator(SELECTORS.JOB_CONTAINER).all();
         
-        const initialResults: ScrapedJobData[] = await Promise.all(
-            jobWrappers.map(extractInitialJobData)
-        );
+        console.log(`📊 Locator.all() nəticəsi: ${jobWrappers.length} wrapper tapıldı`);
         
-        // --- SALARY DƏQİQLƏŞDİRMƏ ---
+        // For loop istifadə et (Promise.all əvəzinə)
+        const initialResults: ScrapedJobData[] = [];
+        
+        for (let i = 0; i < jobWrappers.length; i++) {
+            const result = await extractInitialJobData(jobWrappers[i], i);
+            initialResults.push(result);
+        }
+        
+        console.log(`\n📊 Extraction tamamlandı. Nəticə sayı: ${initialResults.length}`);
+        console.log(`📊 Title olan nəticələr: ${initialResults.filter(j => j.title.length > 0).length}`);
+        
         const finalResults: ScrapedJobData[] = []; 
         
         for (const job of initialResults) {
@@ -181,7 +195,6 @@ const browser: Browser = await chromium.launch({
         console.log("\n--- SCRAPING NƏTİCƏLƏRİ ---");
         console.log(`\n✅ Yekun Nəticə: ${filteredResults.length} elan çıxarıldı.`);
 
-        // --- SUPABASE-Ə YAZMA HİSSƏSİ ---
         await insertOrUpdateSupabase(filteredResults);
 
         return filteredResults; 
