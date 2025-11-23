@@ -10,7 +10,7 @@ export default async function handler(
     }
     
     try {
-        // Həftəlik abunəçiləri emal edirik
+
         await processSubscriptions('weekly');
         
         return res.status(200).json({ status: 'success', message: '✅ Həftəlik bildirişlər emal edildi.' });

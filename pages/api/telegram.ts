@@ -8,7 +8,6 @@ if (!BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN tapılmadı');
 }
 
-// Bot yalnız bir dəfə yaradılır (global scope)
 let bot: Telegraf<Context> | null = null;
 
 function getBot() {
@@ -27,7 +26,6 @@ const userStates: Map<number, SubscriptionState> = new Map();
 
 function setupBot(bot: Telegraf<Context>) {
     
-    // /start command
     bot.command('start', (ctx) => {
         ctx.reply(
             `👋 *Xoş gəldiniz!*
@@ -46,7 +44,6 @@ function setupBot(bot: Telegraf<Context>) {
         );
     });
 
-    // /subscribe command
     bot.command('subscribe', (ctx) => {
         if (!ctx.chat) return;
         userStates.set(ctx.chat.id, { keyword: null, frequency: null });
@@ -57,7 +54,6 @@ function setupBot(bot: Telegraf<Context>) {
         );
     });
 
-    // Text mesajları
     bot.on('text', async (ctx) => {
         if (!ctx.chat) return;
 
@@ -84,7 +80,6 @@ function setupBot(bot: Telegraf<Context>) {
         }
     });
 
-    // Callback query
     bot.on('callback_query', async (ctx) => {
         if (!('data' in ctx.callbackQuery) || !ctx.chat) return;
         
@@ -101,7 +96,7 @@ function setupBot(bot: Telegraf<Context>) {
             try {
                 await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
             } catch (e) {
-                // Ignore
+                
             }
 
             try {

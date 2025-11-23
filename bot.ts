@@ -1,12 +1,11 @@
 // my-scrape-project/bot.ts
 
-import 'dotenv/config'; // 🛑 DÜZƏLİŞ: En yuxarıya qoyuldu!
+import 'dotenv/config';
 
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import axios from 'axios';
 
-// Problem yaradan telegraf/types importlarını silirik və tipin təyinatını özümüz edirik.
 type InlineKeyboardMarkupFinal = {
     inline_keyboard: {
         text: string;
@@ -14,7 +13,6 @@ type InlineKeyboardMarkupFinal = {
     }[][];
 };
 
-// --- KONFİQURASİYA ---
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const NEXTJS_SUBSCRIBE_URL = 'http://localhost:3000/api/subscribe'; 
 
@@ -22,7 +20,7 @@ if (!BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN .env faylında təyin edilməyib.');
 }
 
-// Context tipi düzgün təyin olunur
+
 const bot = new Telegraf<Context>(BOT_TOKEN);
 
 interface SubscriptionState {
@@ -31,7 +29,7 @@ interface SubscriptionState {
 }
 const userStates: Map<number, SubscriptionState> = new Map();
 
-// --- 1. /subscribe əmri ---
+
 bot.command('subscribe', (ctx) => {
     if (!ctx.chat) return;
     userStates.set(ctx.chat.id, { keyword: null, frequency: null });
@@ -42,10 +40,6 @@ bot.command('subscribe', (ctx) => {
     );
 });
 
-// --- 2. Keyword-ü qəbul etmək ---
- 
-
-// --- 3. Frequency-i qəbul etmək və API-yə göndərmək ---
 bot.on('callback_query', async (ctx) => {
     if (!('data' in ctx.callbackQuery) || !ctx.chat) return; 
     
@@ -61,7 +55,7 @@ bot.on('callback_query', async (ctx) => {
         
         await ctx.editMessageReplyMarkup({ inline_keyboard: [] } as InlineKeyboardMarkupFinal); 
 
-        // --- POST API SORĞUSU ---
+        
         try {
             const postData = {
                 ch_id: String(chatId), 
@@ -92,7 +86,7 @@ bot.on('callback_query', async (ctx) => {
 });
 
 
-// Botu işə salırıq
+
 bot.launch().then(() => {
     console.log('🤖 Telegram Botu uğurla işə düşdü!');
     console.log(`Abunəlik API-si: ${NEXTJS_SUBSCRIBE_URL}`);

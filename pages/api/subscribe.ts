@@ -42,14 +42,12 @@ export default async function handler(
             chat_id: chatIdNumber, 
             keyword: keyword.toLowerCase().trim(),
             frequency: frequency,
-            last_job_id: 0, // 🛑 DÜZƏLİŞ 2: İlkin dəyəri 0 təyin edirik
+            last_job_id: 0, 
         };
 
         const { error } = await supabase
             .from('subscribe') 
-            // @ts-ignore
             .upsert([subscriptionData], { 
-                // 🛑 DÜZƏLİŞ 1: Konflikti chat_id və keyword kombinasiyası üzərində həll edirik
                 onConflict: 'chat_id, keyword', 
                 ignoreDuplicates: false 
             })

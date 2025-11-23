@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../database.types'; 
 import type { ScrapedJobData } from './scrape'; 
 
-// Database tipləri avtomatik olaraq gəlir
+
 type JobInsert = Database['public']['Tables']['jobs']['Insert']; 
 
 
@@ -28,21 +28,18 @@ export async function insertOrUpdateSupabase(results: ScrapedJobData[]) {
 
     console.log(`Supabase-ə ${results.length} nəticə yazılır...`);
 
-    // 🛑 KRİTİK DÜZƏLİŞ: dataToInsert obyektindəki sahə adları (keys)
-    // Sizin DB şemasındakı sütun adları ilə (Database['public']['Tables']['jobs']['Insert']) tam üst-üstə düşməlidir!
+
     
-    // Əgər sizin DB-dən generated olan 'JobInsert' tipində sahə adı 'siteUrl' kimidirsə:
+
     const dataToInsert: JobInsert[] = results.map(job => ({
         title: job.title,
         company: job.companyName, 
         url: job.url,
         salary: job.salary,
-        // YENİ DƏYİŞİKLİK: 'site_url' yerinə 'siteUrl' istifadə etdik.
-        // Əgər DB-dəki sütun adı 'siteUrl' idisə, bu xətanı həll edir.
+
         siteUrl: job.siteUrl, 
     }));
 
-    // 'url' üzərində upsert (Duplicate Key xətasını aradan qaldırır)
     const { data, error } = await supabase
         .from('jobs')
         .upsert(dataToInsert, {
