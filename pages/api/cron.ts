@@ -19,40 +19,64 @@ export default async function handler(
     const minute = bakuTime.getMinutes();
     const dayOfWeek = bakuTime.getDay();
     
+    console.log(`⏰ Cron: ${bakuTime.toLocaleString('az-AZ')} | ${hour}:${minute}`);
+    
     try {
-        // Hər gün saat 18:00 - Scraping
-        if (hour === 19 && minute < 15) {
-            fetch(`${BASE_URL}/api/scrape`, { 
-                method: 'GET',
-                signal: AbortSignal.timeout(2700000) // 45 dəqiqə (30 dəqiqədən uzun scraping üçün)
-            }).catch(err => console.error('Scrape error:', err));
+        if (hour === 1 && minute < 15) {
+            console.log('🔄 Scraping başladılır...');
             
-            return res.status(200).json({ message: 'Scraping started (18:00)', hour, minute });
+            fetch(`${BASE_URL}/api/scrape`, { 
+                method: 'GET'
+            }).then(() => {
+                console.log('✅ Scraping request sent');
+            }).catch(err => {
+                console.error('❌ Scrape fetch error:', err);
+            });
+            
+            return res.status(200).json({ 
+                message: 'Scraping request sent (01:00 AM)', 
+                hour, 
+                minute 
+            });
         }
         
-        // Hər gün saat 19:00 - Bildirişlər
-        if (hour === 20 && minute < 15) {
+        if (hour === 10 && minute < 15) {
+            console.log('📨 Bildirişlər göndərilir...');
+            
             fetch(`${BASE_URL}/api/cron_daily`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(60000)
+                method: 'GET'
             }).catch(err => console.error('Daily error:', err));
             
-            // Bazar ertəsi həftəlik də göndər
             if (dayOfWeek === 1) {
                 fetch(`${BASE_URL}/api/cron_weekly`, {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(60000)
+                    method: 'GET'
                 }).catch(err => console.error('Weekly error:', err));
                 
-                return res.status(200).json({ message: 'Daily + Weekly started (19:00)', hour, minute });
+                return res.status(200).json({ 
+                    message: 'Daily + Weekly started (10:00 AM)', 
+                    hour, 
+                    minute 
+                });
             }
             
-            return res.status(200).json({ message: 'Daily started (19:00)', hour, minute });
+            return res.status(200).json({ 
+                message: 'Daily started (10:00 AM)', 
+                hour, 
+                minute 
+            });
         }
 
-        return res.status(200).json({ message: 'No action', hour, minute });
+        return res.status(200).json({ 
+            message: 'No action', 
+            hour, 
+            minute
+        });
 
     } catch (error: any) {
-        return res.status(500).json({ message: 'Error', error: error.message });
+        console.error('❌ Cron error:', error);
+        return res.status(500).json({ 
+            message: 'Error', 
+            error: error.message 
+        });
     }
 }
