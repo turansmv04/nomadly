@@ -1,53 +1,59 @@
-// pages/api/scrape.ts (Uptime Robot və Asinxron İcra üçün)
+// pages/api/scrape.ts (Final Versiya: 20:00, 04:00, 12:00)
 
 import { runScrapeAndGetData } from '../../src/scrape'; 
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-// 🛑 Serverless mühitdə isRunning tam etibarlı deyil, lakin işi sığortalamaq üçün saxlayırıq.
+// 🛑 isRunning flagı hələ də serverless mühitdə 100% etibarlı deyil, lakin sığorta kimi saxlayırıq.
 let isRunning = false; 
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+    
+    // 1. MONITORING ZƏNGLƏRİNİ QƏBUL ET (405 XƏTASINI HƏLL EDİR)
+    if (req.method === 'HEAD') {
+        // Monitorinq/Uptime Robot yoxlaması üçün dərhal OK cavabı ver.
+        return res.status(200).json({ message: 'Monitor Check OK (HEAD).' });
+    }
+
     if (req.method !== 'GET') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // 1. Vaxtı Yoxla (Baku Time Zone)
+    // 2. VAJİB: Vaxtı Yoxla (Baku Time Zone)
     const now = new Date();
     const bakuTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Baku' }));
     const hour = bakuTime.getHours();
     
-    // İşləməli olan saatlar: 20:00 (Axşam 8), 04:00 (Səhər 4), 12:00 (Günorta 12)
+    // İşləməli olan saatlar: 20:00, 04:00, 12:00
     const isScheduleTime = (hour === 20 || hour === 4 || hour === 12); 
 
     if (!isScheduleTime) {
-        // Əgər vaxt deyilsə (Uptime Robot hər 5 dəq-dən bir zəng edir), OK cavabını ver və kodu dayandır.
+        // Vaxt deyilsə (Uptime Robot hər 5 dəq-dən bir zəng etdiyi üçün), OK cavabını ver və heç nə etmə.
         return res.status(200).json({ message: `Scrape skipped. Current hour is ${hour}. Scheduled for 20, 4, or 12.` });
     }
     
-    // 2. İşləmə Vaxtıdırsa, Artıq İşləyib-İşləmədiyini Yoxla
+    // 3. İşləmə Vaxtıdırsa, Statusu Yoxla
     if (isRunning) {
         return res.status(429).json({ 
-            message: '⏳ Scraping artıq işləyir. Növbəti zəngi gözləyin.'
+            message: '⏳ Scraping artıq işləyir.'
         });
     }
 
     try {
         isRunning = true;
         
-        // 🛑 KRİTİK DÜZƏLİŞ: runScrapeAndGetData() funksiyasını await etmədən çağır. 
-        // Bu, API-nin dərhal cavab verməsini və işin arxa fonda (35 dəqiqə) davam etməsini təmin edir.
+        // 🛑 ASİNXRON BAŞLANĞIC: await-i sil! Bu, 30 saniyə Timeout-u pozmamaq üçün vacibdir.
         runScrapeAndGetData() 
             .then(() => console.log('✅ Scraping işi uğurla tamamlandı.'))
             .catch((error) => console.error('❌ Scraping işində xəta:', error))
             .finally(() => {
-                // İş bitdikdə (35 dəqiqə sonra) isRunning statusunu sıfırla.
+                // İş 35 dəqiqə sonra bitdikdə statusu yenilə.
                 isRunning = false;
             }); 
             
-        // 3. DƏRHƏL cavab qaytar (Uptime Robot-un 30 saniyə Timeout-u bitməzdən əvvəl)
+        // 4. DƏRHƏL cavab qaytar (Bu, Uptime Robot/Cron-Job.org üçün uğur deməkdir)
         return res.status(200).json({ 
             message: 'Scraping arxa fonda uğurla başladıldı. (Saat: ' + hour + ')',
         });
