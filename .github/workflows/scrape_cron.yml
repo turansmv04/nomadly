@@ -1,11 +1,11 @@
-name: Scrape Cron Job (23:00 AZT)
+name: Scrape Cron Job (23:45 AZT)
 
 on:
   schedule:
-    # Avtomatik İcra: Hər gün saat 23:00 Bakı vaxtı (UTC 19:00-dur)
-    - cron: '0 19 * * *'
+    # Avtomatik İcra: Hər gün saat 23:45 Bakı vaxtı (UTC 19:45-dir)
+    - cron: '45 19 * * *'
   
-  # 🛑 DÜZƏLİŞ: Manual icra üçün düymə əlavə edir
+  # Manual icra üçün düymə
   workflow_dispatch: 
 
 jobs:
@@ -16,6 +16,5 @@ jobs:
         run: echo "Starting scrape at $(date -u) UTC"
         
       - name: Call Scrape API (Asinxron Başlanğıc)
-        # --max-time 60: 60 saniyə Timeout verir ki, Render.com oyansın və kod cavab versin.
-        # Bu, 35 dəqiqəlik scraping işini arxa fonda başlatmaq üçün KRİTİK ƏMRDİR.
+        # 60 saniyə Timeout Render'in oyanması üçün kifayətdir.
         run: curl --max-time 60 https://yeni-projem-1.onrender.com/api/scrape
