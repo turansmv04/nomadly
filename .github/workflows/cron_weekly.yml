@@ -1,0 +1,16 @@
+name: Send Weekly Message (Tuesday 08:00 AZT)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Hər həftənin 2-ci günü 08:00 AZT (04:00 UTC)
+    - cron: '0 4 * * 2'
+
+jobs:
+  run_weekly_message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Weekly Message Request to Render
+        run: |
+          echo "Sending Weekly Message Request to Render..."
+          curl --max-time 60 https://yeni-projem-1.onrender.com/api/cron_weekly
