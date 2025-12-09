@@ -17,5 +17,5 @@ export default async function handler(
     } catch (error: any) {
         console.error("Cron Weekly API-də gözlənilməyən xəta:", error);
         return res.status(500).json({ status: 'error', message: '❌ Daxili server xətası.' });
-    }
+ }
 }

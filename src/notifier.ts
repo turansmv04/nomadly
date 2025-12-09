@@ -170,7 +170,7 @@ export async function processSubscriptions(frequency: 'daily' | 'weekly') {
 
     if (subError || !subscribers || subscribers.length === 0) {
         console.log(`INFO: ${frequency.toUpperCase()} abunəçisi yoxdur.`);
-        return { status: 'success', message: `${frequency.toUpperCase()} abunəçisi yoxdur.` };
+        return { status: 'skipped', message: `${frequency.toUpperCase()} abunəçisi yoxdur.` };
     }
     
     console.log(`INFO: ${subscribers.length} ${frequency} abunəçisi emal edilir...`);
