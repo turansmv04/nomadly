@@ -5,8 +5,7 @@ import 'dotenv/config';
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import axios from 'axios';
-import { createSupabaseClient } from './src/supabase';
-const supabase=createSupabaseClient()
+
 type InlineKeyboardMarkupFinal = {
     inline_keyboard: {
         text: string;
@@ -41,22 +40,6 @@ bot.command('subscribe', (ctx) => {
     );
 });
 
-bot.command('unsubscribe', async (ctx) =>{
-    const chat_id = ctx.chat?.id;
-    if(!chat_id) return;
-
-    const {error} = await supabase
-    .from('subscribe')
-    .delete()
-    .eq('chat_id',chat_id);
-
-    if (error){
-        console.log(error);
-        ctx.reply("Sen abone deyildin və ya silinmə zamanı xəta baş verdi.");
-        } else{
-            ctx.reply("Abunəlikdən çıxıldı.Artıq sizə bildiriş göndərilməyəcək.");
-        }
-});
 bot.on('callback_query', async (ctx) => {
     if (!('data' in ctx.callbackQuery) || !ctx.chat) return; 
     
