@@ -5,8 +5,8 @@ import 'dotenv/config';
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import axios from 'axios';
-import {supabase} from '/src/supabase'
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseClient } from './src/supabase';
+const supabase=createSupabaseClient()
 type InlineKeyboardMarkupFinal = {
     inline_keyboard: {
         text: string;
