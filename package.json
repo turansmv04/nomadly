@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start-next": "next start -H 0.0.0.0 -p $PORT",
-    "start-bot": "ts-node bot.ts",
+    "start-bot": "node --loader ts-node/esm bot.ts",
     "lint": "next lint",
     "start": "concurrently --kill-others \"npm run start-next\" \"npm run start-bot\""
   },
