@@ -9,7 +9,7 @@ type InlineKeyboardMarkupFinal = {
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-// 1. ✅ DÜZƏLİŞ: Public URL təyin edildi
+// Public URL təyin edildi
 const NEXTJS_SUBSCRIBE_URL = 'https://yeni-projem-1.onrender.com/api/subscribe';
 
 if (!BOT_TOKEN) {
@@ -28,13 +28,14 @@ const userStates: Map<number, SubscriptionState> = new Map();
 bot.command('subscribe', (ctx) => {
   if (!ctx.chat) return;
   userStates.set(ctx.chat.id, { keyword: null, frequency: null });
+  console.log(`[DEBUG] /subscribe əmri alındı. Chat ID: ${ctx.chat.id}`);
   ctx.reply(
     '👋 Salam! Zəhmət olmasa, axtarış etmək istədiyiniz *Keyword*-ü (məsələn: CyberSecurity, Developer, Engineer) daxil edin.',
     { parse_mode: 'Markdown' }
   );
 });
 
-// 2. ✅ DÜZƏLİŞ: Keyword-ü tutan və frequency-i soruşan handler əlavə edildi
+// ✅ Keyword-ü tutan handler (Donma probleminin həlli)
 bot.on(message('text'), async (ctx) => {
     if (!ctx.chat) return;
 
@@ -44,6 +45,7 @@ bot.on(message('text'), async (ctx) => {
     // Əgər state mövcuddursa və keyword hələ qeyd edilməyibsə
     if (state && state.keyword === null) {
         state.keyword = ctx.message.text.trim();
+        console.log(`[DEBUG] Keyword qeyd edildi: ${state.keyword}`);
 
         const inlineKeyboard: InlineKeyboardMarkupFinal = {
             inline_keyboard: [
@@ -59,67 +61,71 @@ bot.on(message('text'), async (ctx) => {
             { parse_mode: 'Markdown', reply_markup: inlineKeyboard }
         );
     } else if (state && state.keyword !== null && state.frequency === null) {
-        // İstifadəçi frequency gözlənilərkən başqa mətn yazarsa
         await ctx.reply('Zəhmət olmasa, yuxarıdakı düymələrdən birini seçin: Gündəlik və ya Həftəlik.');
     }
-    // Əks halda (əgər state yoxdursa və ya abunəlik prosesi bitibsə), mətnə cavab vermir.
 });
 
+// ✅ Callback (Düymə) handler (Debug logları ilə)
 bot.on('callback_query', async (ctx) => {
-  if (!('data' in ctx.callbackQuery) || !ctx.chat) return;
-  const callbackData = ctx.callbackQuery.data;
-  const chatId = ctx.chat.id;
-  const state = userStates.get(chatId);
-  
-  // Əmin oluruq ki, state, keyword var və bu bir frequency seçimidir.
-  if (state && state.keyword && callbackData.startsWith('freq_')) {
-    const frequency = callbackData.replace('freq_', '') as 'daily' | 'weekly';
-    state.frequency = frequency;
-    
-    // Düyməyə basılmasını təsdiqləyir və düymələri silir
-    await ctx.answerCbQuery('Seçim qeydə alındı.');
-    
-    // Düymələri sildikdə bəzən Telegraf xəta verə bilər. Aşağıdakı sətir bu məqsədlə istifadə olunur.
-    // Lakin, biz indi editMessageReplyMarkup istifadə edirik
-    try {
-        await ctx.editMessageReplyMarkup({ inline_keyboard: [] } as InlineKeyboardMarkupFinal);
-    } catch (error) {
-        // Mesaj çox köhnədirsə, bu xəta normaldır.
-        console.log("Mesaj markupu silinərkən xəta baş verdi (yəqin ki, çox köhnədir).");
-    }
+    if (!('data' in ctx.callbackQuery) || !ctx.chat) return;
+    const callbackData = ctx.callbackQuery.data;
+    const chatId = ctx.chat.id;
+    const state = userStates.get(chatId);
 
-    try {
-      const postData = {
-        ch_id: String(chatId),
-        keyword: state.keyword,
-        frequency: state.frequency,
-      };
-      
-      // API müraciəti
-      const response = await axios.post(NEXTJS_SUBSCRIBE_URL, postData);
-      
-      if (response.data.status === 'success') {
-        await ctx.reply(
-          `🎉 *Təbrik edirik!* Siz **${state.keyword}** sözünə *${state.frequency.toUpperCase()}* abunə oldunuz.`,
-          { parse_mode: 'Markdown' }
-        );
-      } else {
-        await ctx.reply(
-          `❌ Abunəlik uğursuz oldu: ${response.data.message || 'Daxili API xətası.'}`
-        );
-      }
-    } catch (error: any) {
-      console.error("API-yə qoşularkən xəta:", error.message);
-      await ctx.reply(
-        `❌ Xəta baş verdi. Zəhmət olmasa, serverin işlək olduğundan əmin olun.\nXəta: ${error.message}`
-      );
+    // DEBUG: 1. Callback-in alındığını yoxla
+    console.log(`[DEBUG] Callback alındı. Chat ID: ${chatId}, Data: ${callbackData}`);
+
+    if (state && state.keyword && callbackData.startsWith('freq_')) {
+        console.log('[DEBUG] Şərtlər ödənir. Prosesə başlanılır...');
+        
+        const frequency = callbackData.replace('freq_', '') as 'daily' | 'weekly';
+        state.frequency = frequency;
+
+        await ctx.answerCbQuery('Seçim qeydə alındı.');
+        
+        // Düymələri silmək (Təhlükəsiz try/catch əlavə edildi)
+        try {
+            await ctx.editMessageReplyMarkup({ inline_keyboard: [] } as InlineKeyboardMarkupFinal);
+        } catch (error) {
+            console.error("[DEBUG] Düymə silinərkən kiçik xəta (normal ola bilər):", error);
+        }
+
+        try {
+            const postData = {
+                ch_id: String(chatId),
+                keyword: state.keyword,
+                frequency: state.frequency,
+            };
+            
+            console.log("[DEBUG] API-yə göndərilən data:", postData);
+            
+            const response = await axios.post(NEXTJS_SUBSCRIBE_URL, postData);
+            
+            console.log("[DEBUG] API-dən gələn status kodu:", response.status);
+            console.log("[DEBUG] API-dən gələn DATA:", response.data);
+
+            if (response.data.status === 'success') {
+                await ctx.reply(
+                    `🎉 *Təbrik edirik!* Siz **${state.keyword}** sözünə *${state.frequency.toUpperCase()}* abunə oldunuz.`,
+                    { parse_mode: 'Markdown' }
+                );
+            } else {
+                await ctx.reply(
+                    `❌ Abunəlik uğursuz oldu: ${response.data.message || 'Daxili API xətası.'}`
+                );
+            }
+
+        } catch (error: any) {
+            // DEBUG: 6. Əsas Xəta bloku
+            console.error("❌❌ KRİTİK XƏTA: API-yə qoşularkən xəta:", error.message);
+            await ctx.reply(
+                `❌ Xəta baş verdi. Zəhmət olmasa, serverin işlək olduğundan əmin olun.\nXəta: ${error.message}`
+            );
+        }
+        userStates.delete(chatId);
+    } else {
+        await ctx.answerCbQuery('Bu seçim artıq etibarlı deyil və ya proses bitib.');
     }
-    
-    // Proses bitdi, state silinir
-    userStates.delete(chatId);
-  } else {
-    await ctx.answerCbQuery('Bu seçim artıq etibarlı deyil və ya proses tamamlanıb.');
-  }
 });
 
 bot.launch()
