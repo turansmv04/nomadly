@@ -3,25 +3,6 @@ import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import axios from 'axios';
 
-// Mühit Dəyişənlərini Yoxlayın
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const NEXTJS_SUBSCRIBE_URL = process.env.SUBSCRIBE_API_URL;
-const WEBHOOK_DOMAIN = process.env.WEBHOOK_DOMAIN; // yeni-projem-1.onrender.com
-const BOT_SECRET_PATH = process.env.BOT_SECRET_PATH || '/telegraf-webhook'; 
-// Render üçün PORT avtomatik təyin edilir, amma yerli default 3000 qoyuruq
-const PORT = process.env.PORT || 3000; 
-
-if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN təyin edilməyib.');
-if (!NEXTJS_SUBSCRIBE_URL) throw new Error('SUBSCRIBE_API_URL təyin edilməyib.');
-if (process.env.NODE_ENV === 'production' && !WEBHOOK_DOMAIN) {
-    throw new Error('NODE_ENV=production rejimində WEBHOOK_DOMAIN təyin edilməlidir.');
-}
-
-const bot = new Telegraf<Context>(BOT_TOKEN);
-
-// --- State Management və Handler Kodları ---
-// (Bu hissə sizin orijinal kodunuzdan götürülmüşdür, dəyişdirilməyib)
-
 type InlineKeyboardMarkupFinal = {
     inline_keyboard: {
         text: string;
@@ -29,12 +10,22 @@ type InlineKeyboardMarkupFinal = {
     }[][];
 };
 
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const NEXTJS_SUBSCRIBE_URL = process.env.SUBSCRIBE_API_URL || 'http://localhost:3000/api/subscribe';
+
+if (!BOT_TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN .env faylında təyin edilməyib.');
+}
+
+const bot = new Telegraf<Context>(BOT_TOKEN);
+
 interface SubscriptionState {
     keyword: string | null;
     frequency: 'daily' | 'weekly' | null;
 }
 const userStates: Map<number, SubscriptionState> = new Map();
 
+// /subscribe command
 bot.command('subscribe', (ctx) => {
     if (!ctx.chat) return;
     userStates.set(ctx.chat.id, { keyword: null, frequency: null });
@@ -45,12 +36,14 @@ bot.command('subscribe', (ctx) => {
     );
 });
 
+// Text message handler - keyword qəbul edir
 bot.on(message('text'), async (ctx) => {
     const chatId = ctx.chat?.id;
     if (!chatId) return;
 
     const state = userStates.get(chatId);
     
+    // Əgər state yoxdursa və ya keyword artıq alınıbsa, geri qayıt
     if (!state || state.keyword !== null) return;
 
     const keyword = ctx.message.text.trim();
@@ -71,6 +64,7 @@ bot.on(message('text'), async (ctx) => {
     );
 });
 
+// Callback query handler - frequency seçimi
 bot.on('callback_query', async (ctx) => {
     if (!('data' in ctx.callbackQuery) || !ctx.chat) return; 
     
@@ -93,7 +87,8 @@ bot.on('callback_query', async (ctx) => {
             };
 
             console.log('API-yə göndərilir:', NEXTJS_SUBSCRIBE_URL);
-            
+            console.log('Data:', postData);
+
             const response = await axios.post(NEXTJS_SUBSCRIBE_URL, postData, {
                 timeout: 10000,
                 headers: {
@@ -112,7 +107,11 @@ bot.on('callback_query', async (ctx) => {
 
         } catch (error: any) {
             console.error("API-yə qoşularkən xəta:", error.message);
-            await ctx.reply(`❌ Xəta baş verdi. Serverlə əlaqə mümkün olmadı. Xəta: ${error.message}`);
+            if (error.response) {
+                console.error('Response status:', error.response.status);
+                console.error('Response data:', error.response.data);
+            }
+            await ctx.reply(`❌ Xəta baş verdi. Zəhmət olmasa, serverin işlək olduğundan əmin olun.\nXəta: ${error.message}`);
         }
 
         userStates.delete(chatId);
@@ -121,41 +120,27 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
-// --- İŞƏ SALMA MƏNTİQİ (Launch Logic) ---
-
-async function launchBot() {
-    if (process.env.NODE_ENV === 'production') {
-        // Production (Render) - Webhook istifadəsi
-        const fullWebhookUrl = `https://${WEBHOOK_DOMAIN}${BOT_SECRET_PATH}`;
+// Bot-u işə sal
+bot.launch().then(async () => {
+    console.log('🤖 Telegram Botu uğurla işə düşdü!');
+    console.log(`Abunəlik API-si: ${NEXTJS_SUBSCRIBE_URL}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Webhook məlumatlarını yoxla
+    try {
+        const webhookInfo = await bot.telegram.getWebhookInfo();
+        console.log('Webhook info:', webhookInfo);
         
-        // Öncə əvvəlki bütün webhookları silək (təmizlik üçün)
-        await bot.telegram.deleteWebhook();
-        
-        // Webhook-u quraq
-        await bot.launch({
-            webhook: {
-                domain: WEBHOOK_DOMAIN,
-                hookPath: BOT_SECRET_PATH,
-                port: Number(PORT)
-            }
-        });
-        
-        // Telegrama bizim Webhook URL-imizi təyin edirik
-        await bot.telegram.setWebhook(fullWebhookUrl);
-
-        console.log(`🤖 Bot Webhook rejimində işə düşdü. Dinləyir port: ${PORT}`);
-        console.log(`Webhook URL: ${fullWebhookUrl}`);
-
-    } else {
-        // Development (Local) - Long Polling istifadəsi
-        console.log('Local mühitdə işləyir. Webhook silinir və Long Polling aktivləşdirilir.');
-        await bot.telegram.deleteWebhook().catch(e => console.log('Silinəcək Webhook yoxdur.'));
-        await bot.launch();
-        console.log('🤖 Telegram Botu Long Polling rejimində uğurla işə düşdü!');
+        // Əgər webhook qurulubsa və siz local test edirsinizsə, silin
+        if (webhookInfo.url && process.env.NODE_ENV !== 'production') {
+            console.log('Webhook silinir (local development üçün)...');
+            await bot.telegram.deleteWebhook();
+            console.log('Webhook silindi. Long polling aktiv.');
+        }
+    } catch (error) {
+        console.error('Webhook yoxlanılarkən xəta:', error);
     }
-}
-
-launchBot().catch(err => {
+}).catch(err => {
     console.error('Bot işə düşərkən kritik xəta:', err);
     process.exit(1);
 });
