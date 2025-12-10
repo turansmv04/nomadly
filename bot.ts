@@ -14,12 +14,7 @@ type InlineKeyboardMarkupFinal = {
 };
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-const NEXTJS_SUBSCRIBE_URL = process.env.NODE_ENV === 'production'
-  ? process.env.PRODUCTION_API_URL!
-  : process.env.LOCAL_API_URL!;
-
-
+const NEXTJS_SUBSCRIBE_URL = 'http://localhost:3000/api/subscribe'; 
 
 if (!BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN .env faylında təyin edilməyib.');
@@ -100,4 +95,4 @@ bot.launch().then(() => {
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM')); 
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
