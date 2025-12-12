@@ -132,7 +132,7 @@ export async function runScrapeAndGetData() {
     try {
         await page.goto(TARGET_URL, { timeout: 60000 });
         // DÜZƏLİŞ 2: ID-yə görə gözləyirik və vaxtı 60 saniyəyə artırırıq.
-        await page.waitForSelector(SELECTORS.LIST_PARENT, { timeout: 60000 }); 
+        await page.waitForSelector(SELECTORS.LIST_PARENT, { timeout: 120000 }); 
 
         let currentJobCount = 0;
         let previousCount = 0;
