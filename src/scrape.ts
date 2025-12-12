@@ -137,7 +137,7 @@ export async function runScrapeAndGetData() {
     try {
         console.log('⏳ Səhifə yüklənir...');
         await page.goto(TARGET_URL, { 
-            timeout: 90000, 
+            timeout: 120000, 
             waitUntil: 'domcontentloaded' 
         });
         console.log('✅ Səhifə DOM yükləndi!');
