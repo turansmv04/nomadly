@@ -15,7 +15,7 @@ export interface ScrapedJobData {
 
 const BASE_URL: string = 'https://www.workingnomads.com'; 
 const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
-const MAX_SCROLL_COUNT = 500; 
+const MAX_SCROLL_COUNT = 150; 
 
 const SELECTORS = {
     JOB_CONTAINER: '.job-wrapper',
