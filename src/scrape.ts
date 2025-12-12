@@ -1,5 +1,5 @@
 // my-scrape-project/src/scrape.ts
-// ✅ WORKING VERSION - Angular app üçün
+// ✅ YENİLƏNMİŞ VERSİYA: Angular app və Paralel Detal Scraping üçün
 
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
@@ -15,6 +15,7 @@ export interface ScrapedJobData {
 
 const BASE_URL: string = 'https://www.workingnomads.com'; 
 const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
+// Render-də timeout-un qarşısını almaq üçün MAX_SCROLL_COUNT azaldılır.
 const MAX_SCROLL_COUNT = 150; 
 
 const SELECTORS = {
@@ -31,7 +32,8 @@ async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise
     let salary = 'N/A';
 
     try {
-        await detailPage.goto(url, { timeout: 40000, waitUntil: 'domcontentloaded' });
+        // Detal səhifə üçün timeout azaldılır
+        await detailPage.goto(url, { timeout: 30000, waitUntil: 'domcontentloaded' });
         const locatorA = detailPage.locator(SELECTORS.DETAIL_SALARY_A).filter({ hasText: '$' }).first();
         const locatorB = detailPage.locator(SELECTORS.DETAIL_SALARY_B).filter({ hasText: '$' }).first();
         let salaryText: string | null = null;
@@ -119,7 +121,7 @@ export async function runScrapeAndGetData() {
             '--disable-gpu',
             '--disable-blink-features=AutomationControlled',
         ]
-    });    
+    }); 
     
     const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -136,24 +138,24 @@ export async function runScrapeAndGetData() {
     
     try {
         console.log('⏳ Səhifə yüklənir...');
+        // Render yavaşlığı üçün page.goto vaxtı 90-dan 120 saniyəyə artırılır
         await page.goto(TARGET_URL, { 
             timeout: 120000, 
             waitUntil: 'domcontentloaded' 
         });
         console.log('✅ Səhifə DOM yükləndi!');
         
-        // ✅ ƏSAS HƏLL: Angular app-in başlamasını gözlə
         console.log('⏳ Angular app-in başlaması gözlənilir...');
         
-        // 1. Job container-lərin yüklənməsini gözlə (DAHA UZUN TIMEOUT)
+        // Job container-lərin yüklənməsini gözlə (120 saniyə)
         await page.waitForSelector(SELECTORS.JOB_CONTAINER, { 
-            timeout: 120000, // 2 dəqiqə
+            timeout: 120000, 
             state: 'visible' 
         });
         
         console.log('✅ Angular app başladı və job-lar yükləndi!');
         
-        // 2. İlk job-ların tam render olmasına vaxt ver
+        // İlk job-ların tam render olmasına vaxt ver
         await page.waitForTimeout(3000);
         
         // 3. İlk say-ı götür
@@ -212,6 +214,7 @@ export async function runScrapeAndGetData() {
         
         const initialResults: ScrapedJobData[] = [];
         
+        // Job-ların yığılması
         for (let i = 0; i < jobWrappers.length; i++) {
             const result = await extractInitialJobData(jobWrappers[i]);
             initialResults.push(result);
@@ -225,36 +228,32 @@ export async function runScrapeAndGetData() {
         const validJobs = initialResults.filter(j => j.title.length > 0);
         console.log(`\n✅ ${validJobs.length} valid job tapıldı`);
         
-        // Salary scraping (detail page-dən)
-        console.log('\n💰 Salary məlumatları yoxlanılır...');
-        const finalResults: ScrapedJobData[] = []; 
-        let salaryCount = 0;
+        // 💰 ƏSAS HƏLL: Salary scraping Paralel şəkildə aparılır (180s limitini aşmamaq üçün)
+        console.log('\n💰 Salary məlumatları Paralel yoxlanılır...');
         
-        for (let i = 0; i < validJobs.length; i++) {
-            const job = validJobs[i];
-            
+        const salaryPromises = validJobs.map(job => {
+            // Əgər salary yoxdursa və URL doğrudursa, paralel olaraq scrapeDetailPageForSalary-i çağır
             if (job.salary === 'N/A' && job.url.startsWith(BASE_URL)) {
-                const detailSalary = await scrapeDetailPageForSalary(browser, job.url);
-                if (detailSalary !== 'N/A') {
-                    salaryCount++;
-                }
-                job.salary = detailSalary;
-            } else if (job.salary !== 'N/A') {
-                salaryCount++;
+                // scrapeDetailPageForSalary zəngini Promise olaraq qaytarır
+                return scrapeDetailPageForSalary(browser, job.url)
+                    .then(detailSalary => ({ ...job, salary: detailSalary }));
             }
-            
-            finalResults.push(job);
-            
-            // Progress indicator
-            if ((i + 1) % 25 === 0) {
-                console.log(`   💵 ${i + 1}/${validJobs.length} job yoxlanıldı (${salaryCount} salary tapıldı)`);
-            }
-        }
+            // Salary tapılıbsa və ya URL düz deyilsə, orijinal job-u qaytar
+            return Promise.resolve(job);
+        });
+
+        // Bütün paralel zənglərin bitməsini gözləyirik
+        const finalResults: ScrapedJobData[] = await Promise.all(salaryPromises);
+
+        let salaryCount = finalResults.filter(j => j.salary !== 'N/A').length;
+        
+        // Progress indicator
+        console.log(`   💵 ${finalResults.length}/${finalResults.length} job yoxlanıldı. Ümumi salary: ${salaryCount}`);
         
         const filteredResults = finalResults.filter(job => job.url !== 'N/A');
 
         console.log("\n╔══════════════════════════════════════╗");
-        console.log("║     SCRAPING NƏTİCƏLƏRİ              ║");
+        console.log("║         SCRAPING NƏTİCƏLƏRİ          ║");
         console.log("╚══════════════════════════════════════╝");
         console.log(`\n✅ Yekun: ${filteredResults.length} elan çıxarıldı`);
         console.log(`💰 Salary məlumatı: ${salaryCount} elan`);
