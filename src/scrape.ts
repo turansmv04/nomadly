@@ -3,7 +3,8 @@
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
 import { insertOrUpdateSupabase } from './supabase'; 
-import chrome from '@sparticuz/chromium'; // `chrome` default export kimi daxil edilir.
+// YENİ DÜZƏLİŞ (Default Import)
+import chrome from '@sparticuz/chromium'; 
 
 export interface ScrapedJobData {
     title: string;
@@ -19,6 +20,7 @@ const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
 const MAX_SCROLL_COUNT = 500; 
 
 const SELECTORS = {
+    // ... (SELEKTORLAR DƏYİŞMƏZ QALIR)
     JOB_CONTAINER: '.job-wrapper',
     TITLE_URL: 'h4.hidden-xs a',
     COMPANY_CONTAINER: '.job-company', 
@@ -33,7 +35,7 @@ const SELECTORS = {
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
     let salary = 'N/A';
-
+    // ... (scrapeDetailPageForSalary funksiyası olduğu kimi qalır)
     try {
         await detailPage.goto(url, { timeout: 40000, waitUntil: 'domcontentloaded' });
         const locatorA = detailPage.locator(SELECTORS.DETAIL_SALARY_A).filter({ hasText: '$' }).first();
@@ -59,8 +61,8 @@ async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise
 }
 
 async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> {
-    
-    const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
+    // ... (extractInitialJobData funksiyası olduğu kimi qalır)
+    const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
     let title = '', relativeUrl = null, url = 'N/A', companyName = 'N/A', salary = 'N/A';
     
     try {
@@ -109,36 +111,38 @@ async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> 
     return { title, companyName, url, salary, siteUrl: BASE_URL };
 }
 
-
 // --- ƏSAS FUNKSİYA ---
 export async function runScrapeAndGetData() {
     
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
-// 2. DƏYİŞİKLİK: Render üçün Launch Konfiqurasiyası
 const browser: Browser = await chromium.launch({ 
     headless: true,
-    // Əgər Playwright brauzeri tapmasa, bu yolu istifadə etsin:
     executablePath: await chrome.executablePath(), 
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        ...chrome.args, // @sparticuz/chromium-un əlavə arqumentlərini əlavə et
+        // YENİ ARQUMENTLƏR (MƏCBURİ VƏ RESURS QƏNAƏTCİL)
+        '--single-process', 
+        '--no-zygote', 
+        '--disable-web-security',
+        '--disable-features=site-per-process',
+        ...chrome.args, 
     ]
 });    
     const page: Page = await browser.newPage();
     
     try {
-        // 3. DƏYİŞİKLİK: Gözləmə rejimini 'networkidle' olaraq dəyişdirin və time-out-u artırın
-        await page.goto(TARGET_URL, { timeout: 90000, waitUntil: 'networkidle' });
-
-        // 4. DƏYİŞİKLİK: waitForSelector metodunu locator.waitFor ilə əvəz edin və time-out-u artırın
+        // 1. DÜZƏLİŞ: TimeOut 120s-ə qaldırıldı və 'domcontentloaded' istifadə edildi
+        await page.goto(TARGET_URL, { timeout: 120000, waitUntil: 'domcontentloaded' });
+        
+        // 2. DÜZƏLİŞ: Elementi tapmaq üçün əvvəlki 60s vaxt gözləyir
         const listParentLocator = page.locator(SELECTORS.LIST_PARENT);
-        await listParentLocator.waitFor({ state: 'visible', timeout: 60000 }); // 60 saniyə gözlə
-        
+        await listParentLocator.waitFor({ state: 'visible', timeout: 60000 }); 
+
         console.log("✅ Ana səhifə uğurla yükləndi və əsas element tapıldı.");
 
         // --- SCROLL DÖVRÜ ---
@@ -204,4 +208,4 @@ const browser: Browser = await chromium.launch({ 
         await browser.close();
         console.log('--- Scraper bitdi ---');
     }
-} 
+}
