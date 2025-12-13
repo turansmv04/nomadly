@@ -3,7 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://yeni-projem-1.onrender.com';
+  process.env.NEXT_PUBLIC_API_URL || 'https://nomadly-3jwg.onrender.com';
 
 export default async function handler(
   req: NextApiRequest,
