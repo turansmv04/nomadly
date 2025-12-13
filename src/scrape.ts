@@ -1,4 +1,4 @@
-// my-scrape-project/src/scrape.ts
+// my-scrape-project/src/scrape.ts (180 saniyəlik timeoutlar tətbiq edildi)
 
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
@@ -27,28 +27,24 @@ const SELECTORS = {
     LIST_PARENT: 'div.jobs-list',
 };
 
-// Bu funksiya hələ də mövcud qalır, lakin artıq runScrapeAndGetData tərəfindən çağırılmayacaq.
+// Bu funksiya artıq çağırılmır, sadəcə kodda saxlanılır
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
     detailPage.setDefaultTimeout(40000); 
     let salary = 'N/A';
-
     try {
         await detailPage.goto(url, { timeout: 40000, waitUntil: 'domcontentloaded' });
         const locatorA = detailPage.locator(SELECTORS.DETAIL_SALARY_A).filter({ hasText: '$' }).first();
         const locatorB = detailPage.locator(SELECTORS.DETAIL_SALARY_B).filter({ hasText: '$' }).first();
         let salaryText: string | null = null;
-        
         try { salaryText = await locatorA.innerText({ timeout: 5000 }); } catch (e) {
             try { salaryText = await locatorB.innerText({ timeout: 5000 }); } catch (e) { }
         }
-        
         if (salaryText && salaryText.includes('$')) {
             const lines = salaryText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             const salaryLine = lines.find(line => line.includes('$'));
             salary = salaryLine ? salaryLine : salaryText.trim();
         }
-
     } catch (e) {
         console.warn(`\n⚠️ XƏBƏRDARLIQ: Detal səhifəsi yüklənmədi və ya Salary tapılmadı: ${url}`);
     } finally {
@@ -130,13 +126,16 @@ const browser: Browser = await chromium.launch({ 
     ]
 });    
     const page: Page = await browser.newPage();
-    page.setDefaultTimeout(120000); 
+    // DÜZƏLİŞ: Ümumi Page timeout-u 180 saniyəyə artırın
+    page.setDefaultTimeout(180000); 
     
     try {
-        await page.goto(TARGET_URL, { timeout: 120000, waitUntil: 'domcontentloaded' });
+        // DÜZƏLİŞ: page.goto timeout-u 180s-ə artırın
+        await page.goto(TARGET_URL, { timeout: 180000, waitUntil: 'domcontentloaded' });
         
+        // DÜZƏLİŞ: locator.waitFor timeout-u 180s-ə artırın
         const listParentLocator = page.locator(SELECTORS.LIST_PARENT);
-        await listParentLocator.waitFor({ state: 'visible', timeout: 120000 }); 
+        await listParentLocator.waitFor({ state: 'visible', timeout: 180000 }); 
 
         console.log("✅ Ana səhifə uğurla yükləndi və əsas element tapıldı.");
 
@@ -173,12 +172,11 @@ const browser: Browser = await chromium.launch({ 
             jobWrappers.map(extractInitialJobData)
         );
         
-        // --- YEKUN NƏTİCƏNİN FİLTRLƏNMƏSİ (Salary dəqiqləşdirməsi ləğv edildi) ---
+        // --- YEKUN NƏTİCƏNİN FİLTRLƏNMƏSİ ---
         const finalResults: ScrapedJobData[] = []; 
         
         for (const job of initialResults) {
             if (job.title.length > 0) {
-                // Əmək haqqı üçün tək-tək səhifəyə getmə hissəsi ləğv edildi!
                 finalResults.push(job);
             }
         }
