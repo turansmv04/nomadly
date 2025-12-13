@@ -3,7 +3,7 @@
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
 import { insertOrUpdateSupabase } from './supabase'; 
-// YENİ DÜZƏLİŞ (Default Import)
+// DÜZƏLİŞ: Default Import istifadə edin
 import chrome from '@sparticuz/chromium'; 
 
 export interface ScrapedJobData {
@@ -20,7 +20,6 @@ const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
 const MAX_SCROLL_COUNT = 500; 
 
 const SELECTORS = {
-    // ... (SELEKTORLAR DƏYİŞMƏZ QALIR)
     JOB_CONTAINER: '.job-wrapper',
     TITLE_URL: 'h4.hidden-xs a',
     COMPANY_CONTAINER: '.job-company', 
@@ -30,12 +29,13 @@ const SELECTORS = {
     LIST_PARENT: 'div.jobs-list',
 };
 
-// --- KÖMƏKÇİ FUNKSİYALAR (Dəyişməz qalır) ---
+// --- KÖMƏKÇİ FUNKSİYALAR ---
 
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
+    detailPage.setDefaultTimeout(40000); // Tək detal səhifəsi üçün 40s
     let salary = 'N/A';
-    // ... (scrapeDetailPageForSalary funksiyası olduğu kimi qalır)
+
     try {
         await detailPage.goto(url, { timeout: 40000, waitUntil: 'domcontentloaded' });
         const locatorA = detailPage.locator(SELECTORS.DETAIL_SALARY_A).filter({ hasText: '$' }).first();
@@ -61,8 +61,8 @@ async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise
 }
 
 async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> {
-    // ... (extractInitialJobData funksiyası olduğu kimi qalır)
-    const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
+    
+    const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
     let title = '', relativeUrl = null, url = 'N/A', companyName = 'N/A', salary = 'N/A';
     
     try {
@@ -117,6 +117,7 @@ export async function runScrapeAndGetData() {
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
+// 1. DÜZƏLİŞ: Resurs Qənaət edən Launch Arqumentləri
 const browser: Browser = await chromium.launch({ 
     headless: true,
     executablePath: await chrome.executablePath(), 
@@ -125,8 +126,7 @@ const browser: Browser = await chromium.launch({ 
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        // YENİ ARQUMENTLƏR (MƏCBURİ VƏ RESURS QƏNAƏTCİL)
-        '--single-process', 
+        '--single-process', // RAM istifadəsini azaldır
         '--no-zygote', 
         '--disable-web-security',
         '--disable-features=site-per-process',
@@ -134,14 +134,17 @@ const browser: Browser = await chromium.launch({ 
     ]
 });    
     const page: Page = await browser.newPage();
+    
+    // 2. DÜZƏLİŞ: Ümumi Page timeout-u 120 saniyəyə artırın
+    page.setDefaultTimeout(120000); 
     
     try {
-        // 1. DÜZƏLİŞ: TimeOut 120s-ə qaldırıldı və 'domcontentloaded' istifadə edildi
+        // 3. DÜZƏLİŞ: page.goto timeout-u 120s və domcontentloaded istifadə edildi
         await page.goto(TARGET_URL, { timeout: 120000, waitUntil: 'domcontentloaded' });
         
-        // 2. DÜZƏLİŞ: Elementi tapmaq üçün əvvəlki 60s vaxt gözləyir
+        // 4. DÜZƏLİŞ: locator.waitFor timeout-u 120s-ə artırın
         const listParentLocator = page.locator(SELECTORS.LIST_PARENT);
-        await listParentLocator.waitFor({ state: 'visible', timeout: 60000 }); 
+        await listParentLocator.waitFor({ state: 'visible', timeout: 120000 }); 
 
         console.log("✅ Ana səhifə uğurla yükləndi və əsas element tapıldı.");
 
