@@ -3,7 +3,6 @@
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
 import { insertOrUpdateSupabase } from './supabase'; 
-// Chromium üçün düzgün import
 import chrome from '@sparticuz/chromium'; 
 
 export interface ScrapedJobData {
@@ -14,7 +13,6 @@ export interface ScrapedJobData {
     siteUrl: string; 
 }
 
-// SİZİN URL DƏYƏRLƏRİNİZ
 const BASE_URL: string = 'https://www.workingnomads.com'; 
 const TARGET_URL: string = `${BASE_URL}/jobs?postedDate=1`; 
 const MAX_SCROLL_COUNT = 500; 
@@ -29,11 +27,10 @@ const SELECTORS = {
     LIST_PARENT: 'div.jobs-list',
 };
 
-// --- KÖMƏKÇİ FUNKSİYALAR ---
-
+// Bu funksiya hələ də mövcud qalır, lakin artıq runScrapeAndGetData tərəfindən çağırılmayacaq.
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
-    detailPage.setDefaultTimeout(40000); // Tək detal səhifəsi üçün 40s
+    detailPage.setDefaultTimeout(40000); 
     let salary = 'N/A';
 
     try {
@@ -60,7 +57,6 @@ async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise
     return salary;
 }
 
-// DÜZƏLİŞ: Bütün daxili timeoutlar çıxarılıb
 async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> {
     
     const titleLocator = wrapper.locator(SELECTORS.TITLE_URL).first();
@@ -103,7 +99,7 @@ async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> 
     
     try {
         const salaryLocator = wrapper.locator(SELECTORS.LIST_SALARY).filter({ hasText: '$' }).first();
-        const salaryText = await salaryLocator.innerText(); // Timeout silindi
+        const salaryText = await salaryLocator.innerText(); 
         if (salaryText.includes('$') && salaryText.length > 5) {
             salary = salaryText.trim();
         }
@@ -118,7 +114,6 @@ export async function runScrapeAndGetData() {
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
-// Resurs Qənaət edən Launch Arqumentləri
 const browser: Browser = await chromium.launch({ 
     headless: true,
     executablePath: await chrome.executablePath(), 
@@ -135,14 +130,11 @@ const browser: Browser = await chromium.launch({ 
     ]
 });    
     const page: Page = await browser.newPage();
-    // Ümumi Page timeout-u 120 saniyəyə artırın
-    page.setDefaultTimeout(120000); 
+    page.setDefaultTimeout(120000); 
     
     try {
-        // page.goto timeout-u 120s və domcontentloaded istifadə edildi
         await page.goto(TARGET_URL, { timeout: 120000, waitUntil: 'domcontentloaded' });
         
-        // locator.waitFor timeout-u 120s-ə artırın
         const listParentLocator = page.locator(SELECTORS.LIST_PARENT);
         await listParentLocator.waitFor({ state: 'visible', timeout: 120000 }); 
 
@@ -181,15 +173,12 @@ const browser: Browser = await chromium.launch({ 
             jobWrappers.map(extractInitialJobData)
         );
         
-        // --- SALARY DƏQİQLƏŞDİRMƏ ---
+        // --- YEKUN NƏTİCƏNİN FİLTRLƏNMƏSİ (Salary dəqiqləşdirməsi ləğv edildi) ---
         const finalResults: ScrapedJobData[] = []; 
         
         for (const job of initialResults) {
             if (job.title.length > 0) {
-                if (job.salary === 'N/A' && job.url.startsWith(BASE_URL)) {
-                    const detailSalary = await scrapeDetailPageForSalary(browser, job.url); 
-                    job.salary = detailSalary;
-                }
+                // Əmək haqqı üçün tək-tək səhifəyə getmə hissəsi ləğv edildi!
                 finalResults.push(job);
             }
         }
