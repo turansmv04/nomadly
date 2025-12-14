@@ -1,0 +1,30 @@
+name: 3. 📅 Weekly Notification Cron
+
+on:
+  schedule:
+    # Hər Bazar ertəsi 09:00 UTC işə düşür
+    - cron: '0 9 * * 1' 
+  workflow_dispatch:
+
+jobs:
+  notify_weekly:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Kodu Çıxart
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Node.js quraşdır (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: ⬇️ Asılılıqları quraşdır
+        run: npm install
+        
+      - name: 🏃 Həftəlik Bildirişi işə sal
+        run: npm run cron:weekly
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
