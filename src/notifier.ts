@@ -1,11 +1,11 @@
 // my-scrape-project/src/notifier.ts
 
-import { createSupabaseClient } from './supabase';
+import { createSupabaseClient } from './supabase.js';
 import axios from 'axios';
 import 'dotenv/config';
 
 
-import type { Database } from '../database.types'; 
+import type { Database } from '../database.types.ts'; 
 
 
 type SubscribeRow = Database['public']['Tables']['subscribe']['Row'];
