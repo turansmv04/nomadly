@@ -21,6 +21,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          
+      # --- KOD GÖRÜNMƏSİNİ TƏMİN ETMƏK ÜÇÜN ƏLAVƏ EDİLDİ ---
+      - name: ℹ️ Düzəliş (Force Re-run)
+        run: echo "Final attempt to force GitHub to see the new package.json scripts"
+      # --------------------------------------------------------
 
       - name: ⬇️ Asılılıqları quraşdır (Playwright/ts-node daxil)
         # Bu addım Playwright quraşdırması zamanı Playwright-ın özünü də quraşdırır.
