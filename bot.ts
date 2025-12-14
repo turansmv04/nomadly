@@ -10,12 +10,10 @@ type InlineKeyboardMarkupFinal = {
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // NEXTJS URL-ləri
-const NEXTJS_SUBSCRIBE_URL = 'https://yeni-projem-1.onrender.com/api/subscribe';
-// Ləğvetmə (Unsubscribe) endpointi
-const NEXTJS_UNSUBSCRIBE_URL = 'https://yeni-projem-1.onrender.com/api/unsubscribe';
-
-// YENİ: İstifadəçi məlumatlarını çəkmək üçün endpoint
-const NEXTJS_GET_SUBSCRIPTIONS_URL = 'https://yeni-projem-1.onrender.com/api/myinfo'; // <--- YENİ URL
+// DƏYİŞİN:
+const NEXTJS_SUBSCRIBE_URL = 'http://localhost:3000/api/subscribe'; 
+const NEXTJS_UNSUBSCRIBE_URL = 'http://localhost:3000/api/unsubscribe';
+const NEXTJS_GET_SUBSCRIPTIONS_URL = 'http://localhost:3000/api/myinfo';
 
 if (!BOT_TOKEN) {
   throw new Error('TELEGRAM_BOT_TOKEN .env faylında təyin edilməyib.');
