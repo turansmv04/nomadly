@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📦 Kodu Çıxart
+      - name: 📦 Kodu Çıxart (Tam Təmiz Çəkmə)
         uses: actions/checkout@v4
+        with:
+          # Bu, tam təmiz kopyalamağa məcbur edir və potential Git/Actions cache problemini həll edir.
+          fetch-depth: 0 
 
       - name: 🛠️ Node.js quraşdır (v20)
         uses: actions/setup-node@v4
@@ -20,9 +23,11 @@ jobs:
           node-version: '20'
 
       - name: ⬇️ Asılılıqları quraşdır (Playwright/ts-node daxil)
+        # Bu addım Playwright quraşdırması zamanı Playwright-ın özünü də quraşdırır.
         run: npm install
         
       - name: 🏃 Scraping-i işə sal (Playwright ilə)
+        # Bu əmr package.json faylınızdan cron:scrape scriptini istifadə edir.
         run: npm run cron:scrape
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
