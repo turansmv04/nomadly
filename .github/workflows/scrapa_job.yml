@@ -1,0 +1,29 @@
+name: 1. 🌐 Job Scraping Cron (Every 4 Hours)
+
+on:
+  schedule:
+    # Hər 4 saatdan bir işə düşür (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC)
+    - cron: '0 */4 * * *' 
+  workflow_dispatch: # Manual işə salma imkanı
+
+jobs:
+  scrape_and_update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Kodu Çıxart
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Node.js quraşdır (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: ⬇️ Asılılıqları quraşdır (Playwright/ts-node daxil)
+        run: npm install
+        
+      - name: 🏃 Scraping-i işə sal (Playwright ilə)
+        run: npm run cron:scrape
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
