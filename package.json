@@ -7,9 +7,16 @@
     "dev": "next dev",
     "build": "next build",
     "start-next": "next start -H 0.0.0.0 -p $PORT",
-    "start-bot": "node --loader ts-node/esm bot.ts",
+    
+    "start-bot": "ts-node src/bot.ts",
+    
     "lint": "next lint",
-    "start": "concurrently --kill-others \"npm run start-next\" \"npm run start-bot\""
+    "start": "concurrently --kill-others \"npm run start-next\" \"npm run start-bot\"",
+    
+
+    "cron:scrape": "ts-node src/scrape.ts",
+    "cron:daily": "ts-node src/notifier.ts daily",
+    "cron:weekly": "ts-node src/notifier.ts weekly"
   },
   "dependencies": {
     "@sparticuz/chromium": "^141.0.0",
