@@ -1,8 +1,9 @@
-// my-scrape-project/src/supabase.ts
+// src/supabase.ts
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types'; 
-import type { ScrapedJobData } from './scrape'; 
+// 🔥 Düzəliş: Yeni NodeNext konfiqurasiyası üçün .ts yerine .js istifadə olunur
+import type { Database } from '../database.types.js'; 
+import type { ScrapedJobData } from './scrape.js'; 
 
 
 type JobInsert = Database['public']['Tables']['jobs']['Insert']; 
@@ -29,7 +30,7 @@ export async function insertOrUpdateSupabase(results: ScrapedJobData[]) {
     console.log(`Supabase-ə ${results.length} nəticə yazılır...`);
 
 
-    
+    
 
     const dataToInsert: JobInsert[] = results.map(job => ({
         title: job.title,
