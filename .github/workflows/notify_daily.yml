@@ -1,0 +1,30 @@
+name: 2. ☀️ Daily Notification Cron
+
+on:
+  schedule:
+    # Hər gün 08:00 UTC işə düşür
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify_daily:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Kodu Çıxart
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Node.js quraşdır (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: ⬇️ Asılılıqları quraşdır
+        run: npm install
+        
+      - name: 🏃 Gündəlik Bildirişi işə sal
+        run: npm run cron:daily
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
