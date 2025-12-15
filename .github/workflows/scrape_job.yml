@@ -3,7 +3,7 @@ name: 1. 🌐 Job Scraping Cron (Every 4 Hours)
 on:
   schedule:
     # Hər 4 saatdan bir işə düşür (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC)
-    - cron: '0 */4 * * *' 
+    - cron: '0 */4 * * *'
   workflow_dispatch: # Manual işə salma imkanı
 
 jobs:
@@ -11,29 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📦 Kodu Çıxart (Tam Təmiz Çəkmə)
+      # 1. Kodu GitHub-dan çəkir
+      - name: ⬇️ Kodu Çəkmə
         uses: actions/checkout@v4
         with:
-          # Bu, tam təmiz kopyalamağa məcbur edir və potential Git/Actions cache problemini həll edir.
-          fetch-depth: 0 
-
+          fetch-depth: 0
+      
+      # 2. Node.js-i quraşdır (v20)
       - name: 🛠️ Node.js quraşdır (v20)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
-      # --- KOD GÖRÜNMƏSİNİ TƏMİN ETMƏK ÜÇÜN ƏLAVƏ EDİLDİ ---
-      - name: ℹ️ Düzəliş (Force Re-run)
-        run: echo "Final attempt to force GitHub to see the new package.json scripts"
-      # --------------------------------------------------------
 
-      - name: ⬇️ Asılılıqları quraşdır (Playwright/ts-node daxil)
-        # Bu addım Playwright quraşdırması zamanı Playwright-ın özünü də quraşdırır.
+      # 3. Asılılıqları yüklə (package.json əsasında)
+      - name: 📦 Asılılıqları yüklə (npm install)
         run: npm install
-        
-      - name: 🏃 Scraping-i işə sal (Playwright ilə)
-        # Bu əmr package.json faylınızdan cron:scrape scriptini istifadə edir.
+
+      # 4. Playwright-ın əsas mühitlərini quraşdır (KRİTİK ƏLAVƏ)
+      - name: ⚙️ Playwright Chromium mühitini quraşdır
+        run: npx playwright install --with-deps chromium
+        # Bu, Linux serverində Playwright-ın işləməsi üçün lazım olan bütün binary faylları yükləyir.
+
+      # 5. Scraping skriptini işə sal
+      - name: 🏃 Scraping-i işə sal
         run: npm run cron:scrape
+        # Supabase ENV-ləri inject edilir
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
