@@ -1,0 +1,42 @@
+name: V2 Scheduled Playwright Scraper
+
+# Bu workflow hər "push" olanda (dəyişiklikləri yoxlamaq üçün)
+# və hər gün UTC saat 08:00 (Bakı vaxtı 12:00) işə düşəcək.
+on:
+  push:
+    branches:
+      - master  # Əgər əsas branch adınız "main"dirsə, onu istifadə edin
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  scrape_data_v2:
+    # Bu işin adını dəyişdirdik
+    name: Run Scraper v2
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Kodu çəkin (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Node.js-i quraşdırın (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🏗️ Proyekt asılılıqlarını quraşdırın
+        # 'npm ci' 'npm install'dan daha sürətli və daha stabil işləyir
+        run: npm ci
+
+      - name: 🌐 Playwright Brauzer Asılılıqlarını quraşdırın (Chromium)
+        # Playwright-ın işləməsi üçün vacib olan sistem asılılıqlarını quraşdırır
+        run: npx playwright install --with-deps chromium
+
+      - name: 🏃 Scraping-i işə sal (Playwright + Supabase)
+        # package.json-dakı "cron:scrape" scripti icra edilir.
+        # Bu, artıq ts-node/esm xətasını aradan qaldırmaq üçün sadələşdirilmişdir.
+        run: npm run cron:scrape
+        env:
+          # Supabase sirləri GitHub Secrets-dən yüklənir
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
