@@ -1,41 +1,40 @@
-name: 1. 🌐 Job Scraping Cron (Every 4 Hours)
+name: Scheduled Playwright Scraper
 
+# Bu workflow hər "push" olanda və hər gün saat 08:00 UTC (12:00 Bakı vaxtı) işə düşəcək
 on:
+  push:
+    branches:
+      - master  # Əgər əsas branch adınız "main"dirsə, onu istifadə edin
   schedule:
-    # Hər 4 saatdan bir işə düşür (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC)
-    - cron: '0 */4 * * *'
-  workflow_dispatch: # Manual işə salma imkanı
+    # Hər gün UTC saat 08:00 (Bakı vaxtı 12:00)
+    - cron: '0 8 * * *'
 
 jobs:
-  scrape_and_update:
-    runs-on: ubuntu-latest
+  scrape_data:
+    runs-on: ubuntu-latest  # Playwright üçün Linux mühiti ən yaxşıdır
     
     steps:
-      # 1. Kodu GitHub-dan çəkir
-      - name: ⬇️ Kodu Çəkmə
+      - name: 📦 Kodu çəkin (Checkout)
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      # 2. Node.js-i quraşdır (v20)
-      - name: 🛠️ Node.js quraşdır (v20)
+
+      - name: 🛠️ Node.js-i quraşdırın (v20)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 3. Asılılıqları yüklə (package.json əsasında)
-      - name: 📦 Asılılıqları yüklə (npm install)
-        run: npm install
+      - name: 🏗️ Proyekt asılılıqlarını quraşdırın
+        # 'npm ci' 'npm install'dan daha sürətli və daha stabil işləyir
+        run: npm ci
 
-      # 4. Playwright-ın əsas mühitlərini quraşdır (KRİTİK ƏLAVƏ)
-      - name: ⚙️ Playwright Chromium mühitini quraşdır
+      - name: 🌐 Playwright Brauzer Asılılıqlarını quraşdırın (Chromium)
+        # Playwright-ın işləməsi üçün lazım olan sistem asılılıqlarını yükləyir
         run: npx playwright install --with-deps chromium
-        # Bu, Linux serverində Playwright-ın işləməsi üçün lazım olan bütün binary faylları yükləyir.
 
-      # 5. Scraping skriptini işə sal
-      - name: 🏃 Scraping-i işə sal
+      - name: 🏃 Scraping-i işə sal (Playwright + Supabase)
+        # package.json-dakı "cron:scrape" scripti işə salınır
         run: npm run cron:scrape
-        # Supabase ENV-ləri inject edilir
         env:
+          # Supabase sirləri GitHub Secrets-dən yüklənir
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # Daha çox dəyişən varsa, bura əlavə edin
