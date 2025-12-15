@@ -1,64 +1,73 @@
-// src/supabase.ts
+// src/scrape.ts
 
-import { createClient } from '@supabase/supabase-js';
-// 🔥 Düzəliş: Yeni NodeNext konfiqurasiyası üçün .ts yerine .js istifadə olunur
-import type { Database } from '../database.types.js'; 
-import type { ScrapedJobData } from './scrape.js'; 
+import { chromium } from 'playwright'; 
 
-
-type JobInsert = Database['public']['Tables']['jobs']['Insert']; 
-
-
-export function createSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // ⚠️ Əlavə LOG: Əmin olmaq üçün ətraf mühit dəyişənlərini yoxlayırıq
-    console.error("❌ SUPABASE CONXETA: SUPABASE_URL və ya KEY tapılmadı. Secrets yoxlanılmalıdır!");
-    throw new Error("Supabase Bağlantı Xətası: .env dəyərləri server mühitində tapılmadı.");
-  }
-  return createClient<Database>(supabaseUrl, supabaseAnonKey);
+// 🚨 Diqqət: Bu interfeys 'supabase.ts' faylı tərəfindən istifadə olunur, ona görə EXPORT edilməlidir.
+export interface ScrapedJobData {
+    title: string;
+    company: string;
+    link: string;
+    // ... digər sahələr (lazım gələrsə əlavə edin)
 }
 
-export async function insertOrUpdateSupabase(results: ScrapedJobData[]) {
-    const supabase = createSupabaseClient();
+// Supabase ilə əlaqə qurmaq üçün lazım olan sirlər (secrets)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+
+async function runScrape() {
+    let browser = null; 
     
-    if (results.length === 0) {
-        console.log("ℹ️ Yazılacaq nəticə yoxdur.");
-        return { data: null, error: null };
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.error("XƏTA: SUPABASE_URL və ya SUPABASE_ANON_KEY mühit dəyişənləri tapılmadı.");
+        process.exit(1);
     }
+    
+    try {
+        console.log("-----------------------------------------");
+        console.log("🚀 Scraping prosesi başladı.");
 
-    // ⚠️ Əlavə LOG: Yazılacaq datanın sayını təkrar yoxlayırıq
-    console.log(`[SUPABASE LOG] ${results.length} nəticə Supabase-ə yazılır...`);
-
-
-    const dataToInsert: JobInsert[] = results.map(job => ({
-        title: job.title,
-        company: job.companyName, 
-        url: job.url,
-        salary: job.salary,
-        siteUrl: job.siteUrl, 
-    }));
-
-    const { data, error } = await supabase
-        .from('jobs')
-        .upsert(dataToInsert, {
-            onConflict: 'url', 
-            ignoreDuplicates: false 
-        })
-        .select();
-
-    if (error) {
-        // 🔥 KRİTİK ƏLAVƏ: Xətanı daha aydın və böyük hərflərlə çap edirik
-        console.error("==================================================================");
-        console.error("❌ KRİTİK SUPABASE XƏTASI: MƏLUMATI YAZA BİLMƏDİ! (RLS ola bilər)", error);
-        console.error("==================================================================");
+        browser = await chromium.launch({
+            headless: true
+        });
         
-        // Prosesi məcburi dayandırırıq ki, Actions qırmızı yansın
-        throw new Error(`Bazaya yazılarkən kritik xəta: ${error.message}. RLS Policy yoxlayın!`);
-    } else {
-        console.log(`✅ [SUPABASE LOG] ${data?.length || 0} elan uğurla yazıldı/yeniləndi.`);
-    }
+        const context = await browser.newContext();
+        const page = await context.newPage();
 
-    return { data, error };
+        console.log("🌐 Brauzer və Səhifə (Page) uğurla yaradıldı.");
+
+        const TARGET_URL = 'https://example.com'; 
+        console.log(`📡 Hədəf URL-a keçid: ${TARGET_URL}`);
+        
+        await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded' });
+
+        // --- Sizin Məlumat Çəkmə (Scraping) Kodunuz Buradan Başlayır ---
+        
+        const title = await page.textContent('h1');
+        console.log(`✅ Saytın Başlığı: ${title}`);
+        
+        // Məsələn, yığılmış datanı bu interfeysə uyğunlaşdırmaq:
+        // const jobData: ScrapedJobData = { title: title, company: 'X', link: page.url() };
+        
+        // --- Sizin Məlumat Çəkmə Kodunuz Burada BİTİR ---
+        
+        console.log("🏆 Scraping uğurla tamamlandı.");
+        console.log("-----------------------------------------");
+
+    } catch (error) {
+        // 🔥 DÜZƏLİŞ: 'unknown' tip xətası burada həll edilir. 🔥
+        console.error("❌ XƏTA BAŞ VERDİ:", (error as Error).message || error); 
+        console.error("❌ Xətanın Tam Stack Trace-i:", error);
+        
+        process.exit(1); 
+        
+    } finally {
+        if (browser) {
+            await browser.close();
+            console.log("Browser bağlandı.");
+        }
+    }
 }
+
+// Skripti işə sal
+runScrape();
