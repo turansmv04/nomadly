@@ -28,7 +28,7 @@ const SELECTORS = {
     LIST_PARENT: 'div.jobs-list',
 };
 
-// --- KÖMƏKÇİ FUNKSİYALAR (Dəyişməz qalır) ---
+// --- KÖMƏKÇİ FUNKSİYALAR ---
 
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
@@ -113,6 +113,11 @@ async function extractInitialJobData(wrapper: Locator): Promise<ScrapedJobData> 
 // --- ƏSAS FUNKSİYA ---
 export async function runScrapeAndGetData() {
     
+    // 🔥 BAŞLANĞIC TƏSDİQ LOGU (KRİTİK ƏLAVƏ)
+    console.log("=========================================================");
+    console.log("✅ [RUN CHECK] SCRAPING PROSESİ BAŞLAYIR! Playwright hazırlanır.");
+    console.log("=========================================================");
+    
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
@@ -126,7 +131,7 @@ export async function runScrapeAndGetData() {
         ]
     }); 
     
-    console.log(`[LOG] Playwright ugurla baslatildi.`); // YENİ LOG ƏLAVƏ EDİLDİ
+    console.log(`[LOG] Playwright ugurla baslatildi.`);
     
     const page: Page = await browser.newPage();
     
@@ -183,6 +188,7 @@ export async function runScrapeAndGetData() {
         const filteredResults = finalResults.filter(job => job.url !== 'N/A');
 
         console.log("\n--- SCRAPING NƏTİCƏLƏRİ ---");
+        // İndi bu log mütləq görünməlidir, əgər skript işləyirsə.
         console.log(`\n✅ Yekun Nəticə: ${filteredResults.length} elan çıxarıldı.`);
 
         // --- SUPABASE-Ə YAZMA HİSSƏSİ ---
@@ -192,9 +198,9 @@ export async function runScrapeAndGetData() {
             return [];
         }
         
-        // SUPABASE-Ə YAZMA VƏ DEBUG LOGU
+        // SUPABASE-Ə YAZMA
         await insertOrUpdateSupabase(filteredResults);
-        console.log(`[FINAL INFO] ${filteredResults.length} elan ugurla Supabase-e yazildi/yenilendi.`); // YENİ LOG ƏLAVƏ EDİLDİ
+        // Supabase funksiyası artıq özü uğurlu və ya xəta loglarını atır.
 
         return filteredResults; 
 
