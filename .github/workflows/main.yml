@@ -1,0 +1,41 @@
+name: V3 Stable Playwright Scraper
+
+# Manual icraya icazə verir. Siz bunu Actions panelində özünüz klikləyərək işə sala bilərsiniz.
+on:
+  workflow_dispatch: 
+  
+  # Həm master, həm də main branchlarını dinləyir
+  push:
+    branches:
+      - main
+      - master
+      
+  # Hər gün UTC saat 08:00 (Bakı vaxtı 12:00) işə düşəcək
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  scrape_data_v3:
+    name: Run Scraper v3
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Kodu çəkin (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Node.js-i quraşdırın (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🏗️ Proyekt asılılıqlarını quraşdırın (npm ci)
+        run: npm ci
+
+      - name: 🌐 Playwright Brauzer Asılılıqlarını quraşdırın (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: 🏃 Scraping-i işə sal (cron:scrape)
+        run: npm run cron:scrape
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
