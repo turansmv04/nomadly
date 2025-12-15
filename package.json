@@ -8,11 +8,11 @@
     "start-next": "next dev -H 0.0.0.0 -p 3000",
     
     "start-bot": "ts-node server.ts",
-    
     "start": "concurrently --kill-others \"npm run start-next\" \"npm run start-bot\"",
     "lint": "next lint",
     
-    "cron:scrape": "ts-node src/scrape.ts",
+    "cron:scrape": "node --loader ts-node/esm src/scrape.ts",
+    
     "cron:daily": "ts-node src/notifier.ts daily",
     "cron:weekly": "ts-node src/notifier.ts weekly"
   },
