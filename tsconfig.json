@@ -7,12 +7,12 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-  
-    "module": "NodeNext", 
-    "moduleResolution": "NodeNext",
-    // import-larda .js uzantısını tələb edəcək
+    
+    "module": "CommonJS", 
+    "moduleResolution": "node",
     "resolveJsonModule": true,
-    // 🔥 KRİTİK DÜZƏLİŞLƏR SONU 🔥
+    
+    "forceConsistentCasingInFileNames": true,
     
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -33,6 +33,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "src/supabase.js"  ],
+    , "src/supabase.js" 
+  ],
   "exclude": ["node_modules"]
 }
