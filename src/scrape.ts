@@ -2,6 +2,7 @@
 
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
+// Əmin olun ki, bu import yolu düzgündür:
 import { insertOrUpdateSupabase } from './supabase'; 
 
 export interface ScrapedJobData {
@@ -27,7 +28,7 @@ const SELECTORS = {
     LIST_PARENT: 'div.jobs-list',
 };
 
-// --- KÖMƏKÇİ FUNKSİYALAR (Sizinki dəyişməz qalır) ---
+// --- KÖMƏKÇİ FUNKSİYALAR (Dəyişməz qalır) ---
 
 async function scrapeDetailPageForSalary(browser: Browser, url: string): Promise<string> {
     const detailPage = await browser.newPage();
@@ -115,15 +116,18 @@ export async function runScrapeAndGetData() {
     console.log(`\n--- WorkingNomads Scraper işə düşdü ---`);
     console.log(`Naviqasiya edilir: ${TARGET_URL}`);
     
-const browser: Browser = await chromium.launch({ 
-    headless: true,
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-    ]
-});    
+    const browser: Browser = await chromium.launch({ 
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+        ]
+    }); 
+    
+    console.log(`[LOG] Playwright ugurla baslatildi.`); // YENİ LOG ƏLAVƏ EDİLDİ
+    
     const page: Page = await browser.newPage();
     
     try {
@@ -182,15 +186,24 @@ const browser: Browser = await chromium.launch({
         console.log(`\n✅ Yekun Nəticə: ${filteredResults.length} elan çıxarıldı.`);
 
         // --- SUPABASE-Ə YAZMA HİSSƏSİ ---
+        // Əgər filterlenmiş nəticə yoxdursa, davam etməyək
+        if (filteredResults.length === 0) {
+            console.log("[FINAL INFO] Cekilecek heç bir yeni elan tapilmadi. Supabase-e yazilmayacaq.");
+            return [];
+        }
+        
+        // SUPABASE-Ə YAZMA VƏ DEBUG LOGU
         await insertOrUpdateSupabase(filteredResults);
+        console.log(`[FINAL INFO] ${filteredResults.length} elan ugurla Supabase-e yazildi/yenilendi.`); // YENİ LOG ƏLAVƏ EDİLDİ
 
         return filteredResults; 
 
     } catch (e) {
         console.error(`❌ Əsas Xəta: ${e instanceof Error ? e.message : String(e)}`);
+        // Xəta olduqda prosesi dayandıraq ki, GitHub Actions qırmızı yansın
         throw e; 
     } finally {
         await browser.close();
         console.log('--- Scraper bitdi ---');
     }
-} 
+}
