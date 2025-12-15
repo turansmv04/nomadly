@@ -2,7 +2,7 @@
 
 import type { Browser, Page, Locator } from 'playwright'; 
 import { chromium } from 'playwright';
-import { insertOrUpdateSupabase } from './supabase.js'; 
+import { insertOrUpdateSupabase } from './supabase'; 
 
 export interface ScrapedJobData {
     title: string;
