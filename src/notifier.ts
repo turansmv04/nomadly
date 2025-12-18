@@ -1,6 +1,6 @@
 // my-scrape-project/src/notifier.ts
 
-import { createSupabaseClient } from './supabase.js';
+import { createSupabaseClient } from './supabase';
 import axios from 'axios';
 import 'dotenv/config';
 
