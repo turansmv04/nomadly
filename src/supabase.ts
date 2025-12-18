@@ -1,73 +1,33 @@
-// src/scrape.ts
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../database.types'; 
 
-import { chromium } from 'playwright'; 
+// Bazadakı 'jobs' cədvəlinin 'Insert' tipini mərkəzi şəkildə götürürük
+export type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 
-// 🚨 Diqqət: Bu interfeys 'supabase.ts' faylı tərəfindən istifadə olunur, ona görə EXPORT edilməlidir.
-export interface ScrapedJobData {
-    title: string;
-    company: string;
-    link: string;
-    // ... digər sahələr (lazım gələrsə əlavə edin)
+export function createSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("❌ Supabase URL və ya Key .env-də tapılmadı.");
+  }
+  return createClient<Database>(supabaseUrl, supabaseKey);
 }
 
-// Supabase ilə əlaqə qurmaq üçün lazım olan sirlər (secrets)
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+export async function insertOrUpdateSupabase(jobs: JobInsert[]) {
+    const supabase = createSupabaseClient();
+    if (jobs.length === 0) return;
 
-
-async function runScrape() {
-    let browser = null; 
+    const { data, error } = await supabase
+        .from('jobs')
+        .upsert(jobs, { onConflict: 'url' })
+        .select();
     
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        console.error("XƏTA: SUPABASE_URL və ya SUPABASE_ANON_KEY mühit dəyişənləri tapılmadı.");
-        process.exit(1);
-    }
-    
-    try {
-        console.log("-----------------------------------------");
-        console.log("🚀 Scraping prosesi başladı.");
+    const writtenData = data as any[] | null;
 
-        browser = await chromium.launch({
-            headless: true
-        });
-        
-        const context = await browser.newContext();
-        const page = await context.newPage();
-
-        console.log("🌐 Brauzer və Səhifə (Page) uğurla yaradıldı.");
-
-        const TARGET_URL = 'https://example.com'; 
-        console.log(`📡 Hədəf URL-a keçid: ${TARGET_URL}`);
-        
-        await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded' });
-
-        // --- Sizin Məlumat Çəkmə (Scraping) Kodunuz Buradan Başlayır ---
-        
-        const title = await page.textContent('h1');
-        console.log(`✅ Saytın Başlığı: ${title}`);
-        
-        // Məsələn, yığılmış datanı bu interfeysə uyğunlaşdırmaq:
-        // const jobData: ScrapedJobData = { title: title, company: 'X', link: page.url() };
-        
-        // --- Sizin Məlumat Çəkmə Kodunuz Burada BİTİR ---
-        
-        console.log("🏆 Scraping uğurla tamamlandı.");
-        console.log("-----------------------------------------");
-
-    } catch (error) {
-        // 🔥 DÜZƏLİŞ: 'unknown' tip xətası burada həll edilir. 🔥
-        console.error("❌ XƏTA BAŞ VERDİ:", (error as Error).message || error); 
-        console.error("❌ Xətanın Tam Stack Trace-i:", error);
-        
-        process.exit(1); 
-        
-    } finally {
-        if (browser) {
-            await browser.close();
-            console.log("Browser bağlandı.");
-        }
+    if (error) {
+        console.error("❌ Supabase xətası:", error.message);
+    } else {
+        console.log(`✅ ${writtenData?.length || 0} elan uğurla yazıldı.`);
     }
 }
-
-// Skripti işə sal
-runScrape();
