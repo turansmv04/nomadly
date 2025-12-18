@@ -1,5 +1,5 @@
-import { runScrapeAndGetData } from '../src/scrape';
-import { processSubscriptions } from '../src/notifier';
+import { runScrapeAndGetData } from '../../src/scrape';
+import { processSubscriptions } from '../../src/notifier';
 
 export default async function handler(req: any, res: any) {
   // Təhlükəsizlik üçün: Vercel Cron-dan gəldiyini yoxlaya bilərik

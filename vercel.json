@@ -1,11 +1,9 @@
 {
+  "version": 2,
   "crons": [
     {
       "path": "/api/cron",
       "schedule": "0 9 * * *"
     }
-  ],
-  "rewrites": [
-    { "source": "/webhook", "destination": "/api/webhook" }
   ]
 }

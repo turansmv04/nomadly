@@ -38,7 +38,7 @@
     "**/*.mts",
     "src/**/*", 
     "pages/**/*"
-  ],
+, "next.config.MJS"  ],
   "exclude": [
     "node_modules"
   ]
