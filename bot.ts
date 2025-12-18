@@ -10,26 +10,22 @@ const userStates: Map<number, any> = new Map();
 
 export function processBotCommands(bot: Telegraf<Context>) {
     
-    // 1. START
     bot.command('start', (ctx) => {
         ctx.reply('👋 Salam! Vakansiya Botuna xoş gəldiniz.\n\nƏmrlər:\n/subscribe - Abunə ol\n/unsubscribe - Abunəliyi ləğv et\n/myinfo - Aktiv abunəliklərim');
     });
 
-    // 2. SUBSCRIBE (Başlanğıc)
     bot.command('subscribe', (ctx) => {
         if (!ctx.chat) return;
         userStates.set(ctx.chat.id, { step: 'waitingForKeyword' });
         ctx.reply('🔍 Hansı sahədə iş axtarırsınız? (Məs: Python, Designer)');
     });
 
-    // 3. UNSUBSCRIBE (Başlanğıc)
     bot.command('unsubscribe', (ctx) => {
         if (!ctx.chat) return;
         userStates.set(ctx.chat.id, { step: 'waitingForUnsubscribe' });
         ctx.reply('❌ Ləğv etmək istədiyiniz abunəliyin **Keyword**-ünü yazın: (Məs: Python)', { parse_mode: 'Markdown' });
     });
 
-    // 4. MY INFO (Məlumatları göstər)
     bot.command('myinfo', async (ctx) => {
         if (!ctx.chat) return;
         const chatId = ctx.chat.id;
@@ -55,13 +51,11 @@ export function processBotCommands(bot: Telegraf<Context>) {
         ctx.reply(infoMsg, { parse_mode: 'Markdown' });
     });
 
-    // 5. TEXT MESSAGES (Keyword tutmaq üçün)
     bot.on(message('text'), async (ctx) => {
         const chatId = ctx.chat.id;
         const state = userStates.get(chatId);
         const userText = ctx.message.text.trim().toLowerCase();
 
-        // Abunə olarkən keyword gözləmək
         if (state?.step === 'waitingForKeyword') {
             userStates.set(chatId, { keyword: userText, step: 'waitingForFreq' });
             await ctx.reply(`✅ Keyword: ${userText}\nTezliyi seçin:`, {
@@ -74,7 +68,6 @@ export function processBotCommands(bot: Telegraf<Context>) {
             });
         } 
         
-        // Abunəlikdən çıxarkən keyword gözləmək
         else if (state?.step === 'waitingForUnsubscribe') {
             const { error, count } = await supabase
                 .from('subscribe')
@@ -93,7 +86,6 @@ export function processBotCommands(bot: Telegraf<Context>) {
         }
     });
 
-    // 6. CALLBACK QUERY (Tezlik seçimi)
     bot.on('callback_query', async (ctx: any) => {
         const data = ctx.callbackQuery.data;
         const chatId = ctx.chat?.id;
@@ -122,7 +114,6 @@ export function processBotCommands(bot: Telegraf<Context>) {
     });
 }
 
-// LOKAL TEST
 if (require.main === module) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
     processBotCommands(bot);

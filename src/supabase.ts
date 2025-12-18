@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../database.types'; 
 
-// Bazadakı 'jobs' cədvəlinin 'Insert' tipini mərkəzi şəkildə götürürük
 export type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 
 export function createSupabaseClient() {

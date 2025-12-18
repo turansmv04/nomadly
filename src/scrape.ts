@@ -16,7 +16,7 @@ export async function runScrapeAndGetData() {
         const payload = {
             "track_total_hits": true,
             "from": 0,
-            "size": 250, // Bir az daha çox çəkək ki, hamısını görək
+            "size": 250, 
             "_source": ["company", "id", "slug", "title", "salary_range_short", "annual_salary_usd", "url", "apply_url"],
             "sort": [{ "pub_date": { "order": "desc" } }],
             "query": {
@@ -48,8 +48,6 @@ export async function runScrapeAndGetData() {
             };
         });
 
-        // 🔥 KRİTİK HİSSƏ: Dublikatları təmizləyirik (URL-ə görə)
-        // Bu hissə "ON CONFLICT" xətasını 100% həll edir
         const uniqueJobsMap = new Map();
         rawJobs.forEach(job => {
             if (job.url) {

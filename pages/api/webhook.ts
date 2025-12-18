@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Telegraf } from 'telegraf';
-import { processBotCommands } from '../../bot'; // Yolun düzgünlüyünü yoxla
+import { processBotCommands } from '../../bot'; 
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
 processBotCommands(bot);

@@ -1,19 +1,34 @@
+import { NextApiRequest, NextApiResponse } from 'next';
 import { runScrapeAndGetData } from '../../src/scrape';
 import { processSubscriptions } from '../../src/notifier';
 
-export default async function handler(req: any, res: any) {
-  // Təhlükəsizlik üçün: Vercel Cron-dan gəldiyini yoxlaya bilərik
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  
   try {
-    console.log("🚀 Cron Job başladı...");
-    
-    // 1. Yeni işləri çək
+    console.log("🚀 Cron Job başladı (Bakı vaxtı 11:00)...");
+
     await runScrapeAndGetData();
-    
-    // 2. Abunəçilərə mesaj göndər (Gündəlik olanlar)
+    console.log("✅ Scrape prosesi bitdi.");
+
+    console.log("📅 Gündəlik abunəçilər üçün bildirişlər göndərilir...");
     await processSubscriptions('daily');
-    
-    return res.status(200).json({ success: true, message: "Scrape and Notify done!" });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+
+    const today = new Date();
+    if (today.getDay() === 0) {
+      console.log("📅 Bugün Bazar günüdür, həftəlik abunəçilər emal olunur...");
+      await processSubscriptions('weekly');
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Proses uğurla tamamlandı." 
+    });
+
+  } catch (error: any) {
+    console.error("❌ Cron Xətası:", error.message);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 }
