@@ -6,7 +6,6 @@ import type { Database } from '../database.types.ts';
 
 type SubscribeRow = Database['public']['Tables']['subscribe']['Row'];
 type JobRow = Database['public']['Tables']['jobs']['Row'];
-type JobKey = keyof JobRow; 
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 if (!TELEGRAM_BOT_TOKEN) {
@@ -44,7 +43,7 @@ function formatJobsForTelegram(jobs: JobRow[], keyword: string): string {
 
         jobEntries.forEach(([key, value]) => {
 
-            if (key === 'id' || key === 'title' || key === 'url' || key === 'posted_at') {
+            if (key === 'id' || key === 'title' || key === 'url') {
                 return;
             }
 

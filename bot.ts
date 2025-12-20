@@ -3,7 +3,6 @@ dotenv.config();
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { createSupabaseClient } from './src/supabase'; 
-import type { Database } from './database.types'; 
 
 const supabase = createSupabaseClient(); 
 const userStates: Map<number, any> = new Map();
